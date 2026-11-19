@@ -1,4 +1,4 @@
-name: Direct Gradle Build
+name: Build H.A.L APK
 
 on:
   push:
@@ -17,14 +17,24 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build APK Directly
+      - name: Find Project and Build APK
         run: |
-          # لو فيه ملف بناء في مجلد فرعي يدخل عليه، لو مفيش يبني مباشرة
-          if [ -d "app" ]; then
-            cd app
+          # البحث عن المجلد أو الملف الصحيح داخل المستودع
+          if [ -d "HAL_Android_Project" ]; then
+            echo "Entering HAL_Android_Project directory..."
+            cd HAL_Android_Project
+          elif [ -d "app" ]; then
+            echo "Using root app directory..."
+          else
+            # البحث عن مجلد يحتوي على gradlew تلقائياً
+            TARGET_DIR=$(dirname "$(find . -name "gradlew" | head -n 1)")
+            if [ "$TARGET_DIR" != "." ] && [ -n "$TARGET_DIR" ]; then
+              echo "Moving to $TARGET_DIR"
+              cd "$TARGET_DIR"
+            fi
           fi
-          
-          # فحص وإعطاء صلاحيات لو موجود، أو البناء بالأمر المباشر
+
+          # إعطاء صلاحيات البناء والتنفيذ
           if [ -f "gradlew" ]; then
             chmod +x gradlew
             ./gradlew assembleDebug
@@ -32,8 +42,8 @@ jobs:
             gradle assembleDebug
           fi
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
-          path: '**/*.apk'
+          path: '**/app-debug.apk'
