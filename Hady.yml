@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Ultimate Android Build
 
 on:
   push:
@@ -8,7 +8,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
@@ -17,8 +17,15 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Find and Build APK
+      - name: Generate Wrapper and Build APK
         run: |
+          # التحقق من وجود ملف gradlew أو إنشائه تلقائياً لو غير موجود
+          if [ ! -f "./gradlew" ] && [ ! -f "app/gradlew" ]; then
+            echo "Gradlew not found, generating gradle wrapper..."
+            gradle wrapper
+          fi
+
+          # البحث عن مكان gradlew وبناء التطبيق
           if [ -f "./gradlew" ]; then
             chmod +x ./gradlew
             ./gradlew assembleDebug
@@ -26,19 +33,18 @@ jobs:
             chmod +x app/gradlew
             cd app && ./gradlew assembleDebug
           else
-            echo "Searching for build files..."
-            gradle_file=$(find . -name "gradlew" | head -n 1)
-            if [ -n "$gradle_file" ]; then
-              dir_name=$(dirname "$gradle_file")
-              chmod +x "$gradle_file"
+            gradle_path=$(find . -name "gradlew" | head -n 1)
+            if [ -n "$gradle_path" ]; then
+              dir_name=$(dirname "$gradle_path")
+              chmod +x "$gradle_path"
               cd "$dir_name" && ./gradlew assembleDebug
             else
-              echo "Error: gradlew not found. Building with generic gradle if available..."
+              echo "Using system gradle fallback..."
               gradle assembleDebug
             fi
           fi
 
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
