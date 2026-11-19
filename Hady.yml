@@ -1,4 +1,4 @@
-name: Simple Android Build
+name: Direct Gradle Build
 
 on:
   push:
@@ -17,23 +17,22 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Build with Gradle
-        uses: gradle/actions/setup-gradle@v3
-
-      - name: Compile and Build APK
+      - name: Build APK Directly
         run: |
-          # لو فيه ملف gradlew يشتغله، لو مش موجود يبني بأمر gradle مباشر
+          # لو فيه ملف بناء في مجلد فرعي يدخل عليه، لو مفيش يبني مباشرة
+          if [ -d "app" ]; then
+            cd app
+          fi
+          
+          # فحص وإعطاء صلاحيات لو موجود، أو البناء بالأمر المباشر
           if [ -f "gradlew" ]; then
             chmod +x gradlew
             ./gradlew assembleDebug
-          elif [ -f "app/gradlew" ]; then
-            chmod +x app/gradlew
-            cd app && ./gradlew assembleDebug
           else
             gradle assembleDebug
           fi
 
-      - name: Upload Generated APK
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: app-debug
